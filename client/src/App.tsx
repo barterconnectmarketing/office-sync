@@ -65,6 +65,129 @@ interface Booking {
   isDefault?: boolean;
 }
 
+// --- Monthly Calendar Component ---
+interface MonthlyCalendarProps {
+  calYear: number; calMonth: number;
+  setCalYear: React.Dispatch<React.SetStateAction<number>>;
+  setCalMonth: React.Dispatch<React.SetStateAction<number>>;
+  monthBookings: Booking[];
+  viewDate: string;
+  setViewDate: React.Dispatch<React.SetStateAction<string>>;
+}
+
+const THAI_MONTHS = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+
+function MonthlyCalendar({ calYear, calMonth, setCalYear, setCalMonth, monthBookings, viewDate, setViewDate }: MonthlyCalendarProps) {
+  const today = new Date().toLocaleDateString('sv-SE');
+
+  const prevMonth = () => {
+    if (calMonth === 0) { setCalYear(y => y - 1); setCalMonth(11); }
+    else setCalMonth(m => m - 1);
+  };
+  const nextMonth = () => {
+    if (calMonth === 11) { setCalYear(y => y + 1); setCalMonth(0); }
+    else setCalMonth(m => m + 1);
+  };
+
+  const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+  let startDow      = new Date(calYear, calMonth, 1).getDay();
+  startDow          = startDow === 0 ? 6 : startDow - 1;
+
+  const cells: (number | null)[] = [];
+  for (let i = 0; i < startDow; i++) cells.push(null);
+  for (let d = 1; d <= daysInMonth; d++) cells.push(d);
+  while (cells.length % 7 !== 0) cells.push(null);
+
+  const getDayRooms = (day: number) => {
+    const dateStr    = new Date(calYear, calMonth, day).toLocaleDateString('sv-SE');
+    const dow        = new Date(calYear, calMonth, day).getDay();
+    const dbBooks    = monthBookings.filter(b => b.date === dateStr && !b.isRelease && b.type === 'meeting');
+    const releases   = monthBookings.filter(b => b.date === dateStr && b.isRelease).map(b => b.releaseKey ?? '');
+    const weeklyIds  = WEEKLY_ROOM_LOCKS
+      .filter(l => l.day === dow && !releases.includes(`room-${l.itemId}-${l.startTime}-${dateStr}`))
+      .map(l => l.itemId);
+    const booked = new Set([...dbBooks.map(b => b.itemId), ...weeklyIds]);
+    return MEETING_ROOMS.map(r => ({ room: r, booked: booked.has(r.id) }));
+  };
+
+  return (
+    <div className="mt-8 pt-8 border-t border-white/10">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-5">
+        <h3 className="font-black italic uppercase text-sm tracking-wider flex items-center gap-2">
+          <CalendarIcon size={16} className="text-indigo-400" /> ตารางรายเดือน
+        </h3>
+        <div className="flex items-center gap-2">
+          <button onClick={prevMonth} className="p-1.5 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white transition-all">
+            <ChevronLeft size={16} />
+          </button>
+          <span className="font-black text-sm w-40 text-center">{THAI_MONTHS[calMonth]} {calYear}</span>
+          <button onClick={nextMonth} className="p-1.5 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white transition-all">
+            <ChevronRight size={16} />
+          </button>
+        </div>
+      </div>
+
+      {/* Day headers */}
+      <div className="grid grid-cols-7 gap-1 mb-1">
+        {['จ','อ','พ','พฤ','ศ','ส','อา'].map(d => (
+          <div key={d} className="text-center text-[9px] font-black text-slate-500 uppercase py-1">{d}</div>
+        ))}
+      </div>
+
+      {/* Grid */}
+      <div className="grid grid-cols-7 gap-1">
+        {cells.map((day, i) => {
+          if (!day) return <div key={`e-${i}`} className="aspect-square" />;
+          const dateStr    = new Date(calYear, calMonth, day).toLocaleDateString('sv-SE');
+          const isToday    = dateStr === today;
+          const isSelected = dateStr === viewDate;
+          const rooms      = getDayRooms(day);
+          const anyBooked  = rooms.some(r => r.booked);
+          return (
+            <button
+              key={dateStr}
+              onClick={() => setViewDate(dateStr)}
+              className={`aspect-square rounded-xl p-1 flex flex-col items-center justify-center gap-0.5 transition-all ${
+                isSelected ? 'bg-indigo-500 ring-2 ring-indigo-300 ring-offset-1 ring-offset-slate-900'
+                : isToday  ? 'bg-white/15 ring-1 ring-white/40'
+                : anyBooked ? 'bg-white/5 hover:bg-white/10'
+                : 'hover:bg-white/5'
+              }`}
+            >
+              <span className={`text-[10px] font-black leading-none ${isSelected || isToday ? 'text-white' : 'text-slate-300'}`}>
+                {day}
+              </span>
+              <div className="flex gap-[2px]">
+                {rooms.map(({ room, booked }) => (
+                  <div key={room.id} className={`w-1 h-1 rounded-full ${
+                    booked ? (room.id === 'MR1' ? 'bg-indigo-400' : room.id === 'MR2' ? 'bg-emerald-400' : 'bg-amber-400')
+                    : isSelected ? 'bg-white/30' : 'bg-white/15'
+                  }`} />
+                ))}
+              </div>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Legend */}
+      <div className="flex flex-wrap gap-x-4 gap-y-1 mt-4 pt-4 border-t border-white/10">
+        {MEETING_ROOMS.map(r => (
+          <div key={r.id} className="flex items-center gap-1.5">
+            <div className={`w-2 h-2 rounded-full ${r.id === 'MR1' ? 'bg-indigo-400' : r.id === 'MR2' ? 'bg-emerald-400' : 'bg-amber-400'}`} />
+            <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider">{r.name}</span>
+          </div>
+        ))}
+        <div className="flex items-center gap-1.5">
+          <div className="w-2 h-2 rounded-full bg-white/15" />
+          <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider">ว่าง</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // --- Session ID (ใช้แทน Firebase anonymous auth) ---
 function getSessionId(): string {
   let id = localStorage.getItem('office_session_id');
@@ -451,132 +574,15 @@ export default function App() {
                 </div>
 
                 {/* Monthly Calendar */}
-                {(() => {
-                  const THAI_MONTHS = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
-                  const today       = new Date().toLocaleDateString('sv-SE');
-
-                  const prevMonth = () => {
-                    if (calMonth === 0) { setCalYear(y => y - 1); setCalMonth(11); }
-                    else setCalMonth(m => m - 1);
-                  };
-                  const nextMonth = () => {
-                    if (calMonth === 11) { setCalYear(y => y + 1); setCalMonth(0); }
-                    else setCalMonth(m => m + 1);
-                  };
-
-                  const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
-                  let startDow      = new Date(calYear, calMonth, 1).getDay(); // 0=Sun
-                  startDow          = startDow === 0 ? 6 : startDow - 1;      // Mon=0
-
-                  const cells: (number | null)[] = [];
-                  for (let i = 0; i < startDow; i++) cells.push(null);
-                  for (let d = 1; d <= daysInMonth; d++) cells.push(d);
-                  while (cells.length % 7 !== 0) cells.push(null);
-
-                  const getDayRooms = (day: number) => {
-                    const dateStr  = new Date(calYear, calMonth, day).toLocaleDateString('sv-SE');
-                    const dow      = new Date(calYear, calMonth, day).getDay();
-                    const dbBooks  = monthBookings.filter(b => b.date === dateStr && !b.isRelease && b.type === 'meeting');
-                    const releases = monthBookings.filter(b => b.date === dateStr && b.isRelease).map(b => b.releaseKey ?? '');
-                    const weekly   = WEEKLY_ROOM_LOCKS
-                      .filter(l => l.day === dow && !releases.includes(`room-${l.itemId}-${l.startTime}-${dateStr}`))
-                      .map(l => l.itemId);
-                    const bookedRooms = new Set([...dbBooks.map(b => b.itemId), ...weekly]);
-                    return MEETING_ROOMS.map(r => ({ room: r, booked: bookedRooms.has(r.id) }));
-                  };
-
-                  return (
-                    <div className="mt-8 pt-8 border-t border-white/10">
-                      {/* Calendar header */}
-                      <div className="flex items-center justify-between mb-5">
-                        <h3 className="font-black italic uppercase text-sm tracking-wider flex items-center gap-2">
-                          <CalendarIcon size={16} className="text-indigo-400" /> ตารางรายเดือน
-                        </h3>
-                        <div className="flex items-center gap-2">
-                          <button onClick={prevMonth} className="p-1.5 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white transition-all">
-                            <ChevronLeft size={16} />
-                          </button>
-                          <span className="font-black text-sm w-40 text-center">
-                            {THAI_MONTHS[calMonth]} {calYear}
-                          </span>
-                          <button onClick={nextMonth} className="p-1.5 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white transition-all">
-                            <ChevronRight size={16} />
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Day-of-week headers */}
-                      <div className="grid grid-cols-7 gap-1 mb-1">
-                        {['จ','อ','พ','พฤ','ศ','ส','อา'].map(d => (
-                          <div key={d} className="text-center text-[9px] font-black text-slate-500 uppercase py-1">{d}</div>
-                        ))}
-                      </div>
-
-                      {/* Calendar grid */}
-                      <div className="grid grid-cols-7 gap-1">
-                        {cells.map((day, i) => {
-                          if (!day) return <div key={`empty-${i}`} className="aspect-square" />;
-                          const dateStr    = new Date(calYear, calMonth, day).toLocaleDateString('sv-SE');
-                          const isToday    = dateStr === today;
-                          const isSelected = dateStr === viewDate;
-                          const rooms      = getDayRooms(day);
-                          const anyBooked  = rooms.some(r => r.booked);
-                          const allBooked  = rooms.every(r => r.booked);
-
-                          return (
-                            <button
-                              key={dateStr}
-                              onClick={() => { setViewDate(dateStr); }}
-                              className={`aspect-square rounded-xl p-1 flex flex-col items-center justify-center gap-0.5 transition-all ${
-                                isSelected
-                                  ? 'bg-indigo-500 ring-2 ring-indigo-300 ring-offset-1 ring-offset-slate-900'
-                                  : isToday
-                                    ? 'bg-white/15 ring-1 ring-white/40'
-                                    : anyBooked
-                                      ? 'hover:bg-white/8 bg-white/5'
-                                      : 'hover:bg-white/5'
-                              }`}
-                            >
-                              <span className={`text-[10px] font-black leading-none ${
-                                isSelected ? 'text-white' : isToday ? 'text-white' : 'text-slate-300'
-                              }`}>
-                                {day}
-                              </span>
-                              {/* Room dots */}
-                              <div className="flex gap-[2px]">
-                                {rooms.map(({ room, booked }) => (
-                                  <div key={room.id} className={`w-1 h-1 rounded-full transition-all ${
-                                    booked
-                                      ? room.id === 'MR1' ? 'bg-indigo-400'
-                                        : room.id === 'MR2' ? 'bg-emerald-400'
-                                        : 'bg-amber-400'
-                                      : isSelected ? 'bg-white/30' : 'bg-white/15'
-                                  }`} />
-                                ))}
-                              </div>
-                            </button>
-                          );
-                        })}
-                      </div>
-
-                      {/* Legend */}
-                      <div className="flex flex-wrap gap-x-4 gap-y-1 mt-4 pt-4 border-t border-white/10">
-                        {MEETING_ROOMS.map(room => (
-                          <div key={room.id} className="flex items-center gap-1.5">
-                            <div className={`w-2 h-2 rounded-full ${
-                              room.id === 'MR1' ? 'bg-indigo-400' : room.id === 'MR2' ? 'bg-emerald-400' : 'bg-amber-400'
-                            }`} />
-                            <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider">{room.name}</span>
-                          </div>
-                        ))}
-                        <div className="flex items-center gap-1.5">
-                          <div className="w-2 h-2 rounded-full bg-white/15" />
-                          <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider">ว่าง</span>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })()}
+                <MonthlyCalendar
+                  calYear={calYear}
+                  calMonth={calMonth}
+                  setCalYear={setCalYear}
+                  setCalMonth={setCalMonth}
+                  monthBookings={monthBookings}
+                  viewDate={viewDate}
+                  setViewDate={setViewDate}
+                />
 
                 {/* Timeline */}
                 <div className="mt-8 pt-8 border-t border-white/10 overflow-x-auto">
