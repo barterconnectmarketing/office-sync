@@ -112,76 +112,81 @@ function MonthlyCalendar({ calYear, calMonth, setCalYear, setCalMonth, monthBook
 
   return (
     <div className="mt-8 pt-8 border-t border-white/10">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-5">
-        <h3 className="font-black italic uppercase text-sm tracking-wider flex items-center gap-2">
-          <CalendarIcon size={16} className="text-indigo-400" /> ตารางรายเดือน
-        </h3>
-        <div className="flex items-center gap-2">
-          <button onClick={prevMonth} className="p-1.5 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white transition-all">
-            <ChevronLeft size={16} />
-          </button>
-          <span className="font-black text-sm w-40 text-center">{THAI_MONTHS[calMonth]} {calYear}</span>
-          <button onClick={nextMonth} className="p-1.5 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white transition-all">
-            <ChevronRight size={16} />
-          </button>
-        </div>
-      </div>
-
-      {/* Day headers */}
-      <div className="grid grid-cols-7 gap-1 mb-1">
-        {['จ','อ','พ','พฤ','ศ','ส','อา'].map(d => (
-          <div key={d} className="text-center text-[9px] font-black text-slate-500 uppercase py-1">{d}</div>
-        ))}
-      </div>
-
-      {/* Grid */}
-      <div className="grid grid-cols-7 gap-1">
-        {cells.map((day, i) => {
-          if (!day) return <div key={`e-${i}`} className="aspect-square" />;
-          const dateStr    = new Date(calYear, calMonth, day).toLocaleDateString('sv-SE');
-          const isToday    = dateStr === today;
-          const isSelected = dateStr === viewDate;
-          const rooms      = getDayRooms(day);
-          const anyBooked  = rooms.some(r => r.booked);
-          return (
-            <button
-              key={dateStr}
-              onClick={() => setViewDate(dateStr)}
-              className={`aspect-square rounded-xl p-1 flex flex-col items-center justify-center gap-0.5 transition-all ${
-                isSelected ? 'bg-indigo-500 ring-2 ring-indigo-300 ring-offset-1 ring-offset-slate-900'
-                : isToday  ? 'bg-white/15 ring-1 ring-white/40'
-                : anyBooked ? 'bg-white/5 hover:bg-white/10'
-                : 'hover:bg-white/5'
-              }`}
-            >
-              <span className={`text-[10px] font-black leading-none ${isSelected || isToday ? 'text-white' : 'text-slate-300'}`}>
-                {day}
-              </span>
-              <div className="flex gap-[2px]">
-                {rooms.map(({ room, booked }) => (
-                  <div key={room.id} className={`w-1 h-1 rounded-full ${
-                    booked ? (room.id === 'MR1' ? 'bg-indigo-400' : room.id === 'MR2' ? 'bg-emerald-400' : 'bg-amber-400')
-                    : isSelected ? 'bg-white/30' : 'bg-white/15'
-                  }`} />
-                ))}
-              </div>
+      {/* Wrapper — พื้นขาว */}
+      <div className="bg-white rounded-3xl p-6">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-5">
+          <h3 className="font-black italic uppercase text-base tracking-wider flex items-center gap-2 text-indigo-900">
+            <CalendarIcon size={18} className="text-indigo-600" /> ตารางรายเดือน
+          </h3>
+          <div className="flex items-center gap-2">
+            <button onClick={prevMonth} className="p-2 rounded-xl hover:bg-indigo-50 text-indigo-400 hover:text-indigo-700 transition-all">
+              <ChevronLeft size={18} />
             </button>
-          );
-        })}
-      </div>
-
-      {/* Legend */}
-      <div className="flex flex-wrap gap-x-4 gap-y-1 mt-4 pt-4 border-t border-white/10">
-        {MEETING_ROOMS.map(r => (
-          <div key={r.id} className="flex items-center gap-1.5">
-            <div className={`w-2 h-2 rounded-full ${r.id === 'MR1' ? 'bg-indigo-400' : r.id === 'MR2' ? 'bg-emerald-400' : 'bg-amber-400'}`} />
-            <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider">{r.name}</span>
+            <span className="font-black text-base w-44 text-center text-indigo-900">{THAI_MONTHS[calMonth]} {calYear}</span>
+            <button onClick={nextMonth} className="p-2 rounded-xl hover:bg-indigo-50 text-indigo-400 hover:text-indigo-700 transition-all">
+              <ChevronRight size={18} />
+            </button>
           </div>
-        ))}
-        <div className="flex items-center gap-1.5">
-          <div className="w-2 h-2 rounded-full bg-white/15" />
-          <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider">ว่าง</span>
+        </div>
+
+        {/* Day headers */}
+        <div className="grid grid-cols-7 gap-1.5 mb-2">
+          {['จ','อ','พ','พฤ','ศ','ส','อา'].map(d => (
+            <div key={d} className="text-center text-xs font-black text-indigo-400 uppercase py-1">{d}</div>
+          ))}
+        </div>
+
+        {/* Grid */}
+        <div className="grid grid-cols-7 gap-1.5">
+          {cells.map((day, i) => {
+            if (!day) return <div key={`e-${i}`} className="aspect-square" />;
+            const dateStr    = new Date(calYear, calMonth, day).toLocaleDateString('sv-SE');
+            const isToday    = dateStr === today;
+            const isSelected = dateStr === viewDate;
+            const rooms      = getDayRooms(day);
+            const anyBooked  = rooms.some(r => r.booked);
+            return (
+              <button
+                key={dateStr}
+                onClick={() => setViewDate(dateStr)}
+                className={`aspect-square rounded-2xl flex flex-col items-center justify-center gap-1 transition-all ${
+                  isSelected ? 'bg-indigo-600 shadow-lg shadow-indigo-200 ring-2 ring-indigo-400'
+                  : isToday  ? 'bg-indigo-50 ring-2 ring-indigo-300'
+                  : anyBooked ? 'bg-slate-50 hover:bg-indigo-50'
+                  : 'hover:bg-slate-50'
+                }`}
+              >
+                <span className={`text-sm font-black leading-none ${
+                  isSelected ? 'text-white' : isToday ? 'text-indigo-700' : 'text-indigo-900'
+                }`}>
+                  {day}
+                </span>
+                <div className="flex gap-[3px]">
+                  {rooms.map(({ room, booked }) => (
+                    <div key={room.id} className={`w-1.5 h-1.5 rounded-full ${
+                      booked ? (room.id === 'MR1' ? 'bg-indigo-500' : room.id === 'MR2' ? 'bg-emerald-500' : 'bg-amber-500')
+                      : 'bg-slate-200'
+                    }`} />
+                  ))}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Legend */}
+        <div className="flex flex-wrap gap-x-5 gap-y-1.5 mt-5 pt-4 border-t border-slate-100">
+          {MEETING_ROOMS.map(r => (
+            <div key={r.id} className="flex items-center gap-1.5">
+              <div className={`w-2.5 h-2.5 rounded-full ${r.id === 'MR1' ? 'bg-indigo-500' : r.id === 'MR2' ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+              <span className="text-xs font-black text-slate-500 uppercase tracking-wide">{r.name}</span>
+            </div>
+          ))}
+          <div className="flex items-center gap-1.5">
+            <div className="w-2.5 h-2.5 rounded-full bg-slate-200" />
+            <span className="text-xs font-black text-slate-400 uppercase tracking-wide">ว่าง</span>
+          </div>
         </div>
       </div>
     </div>
