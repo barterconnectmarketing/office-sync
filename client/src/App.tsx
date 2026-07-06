@@ -37,7 +37,7 @@ const DEFAULT_PARKING_LOCKS = [
   { itemId: 'B1',  userName: 'K.Fon_SL' },
   { itemId: 'B2',  userName: 'K.Lak_TL' },
   { itemId: 'B3',  userName: 'K.Dew_HO' },
-  { itemId: 'B4',  userName: 'K.Nok_HO' },
+  { itemId: 'B4',  userName: 'K.Ple_HO' },
   { itemId: 'B5',  userName: 'K.Nui_HO' },
   { itemId: 'B6',  userName: 'K.Pop_HO' },
   { itemId: 'A15', userName: 'K.Nok_SL' },
